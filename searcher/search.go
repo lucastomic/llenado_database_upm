@@ -142,19 +142,28 @@ func GetRutasPre() []models.RutaPredefinida {
 
 func GetSegmentos(calles []models.Calle, rutas []models.RutaPredefinida) []models.Segmento {
 	var segmentos []models.Segmento
-	for _, ruta := range rutas {
-		for i := 0; i < rand.Intn(10); i++ {
-			calle := calles[rand.Intn(len(calles)-1)]
-			inicio := rand.Intn(50)
+	for _, calle := range calles {
+		inicio := 0
+		final := rand.Intn(40)
+		segmentos = append(segmentos, models.Segmento{
+			Inicio:    inicio,
+			Final:     final,
+			Calle:     calle.Nombre,
+			Municipio: calle.Municipio,
+			Ruta:      rutas[rand.Intn(len(rutas))].ID,
+			Orden:     0,
+		})
+		for i := 1; i < rand.Intn(10); i++ {
+			inicio = final + 1
+			final = inicio + rand.Intn(40)
 			segmentos = append(segmentos, models.Segmento{
 				Inicio:    inicio,
-				Final:     inicio + rand.Intn(70),
+				Final:     final,
 				Calle:     calle.Nombre,
 				Municipio: calle.Municipio,
-				Ruta:      ruta.ID,
+				Ruta:      rutas[rand.Intn(len(rutas))].ID,
 				Orden:     i,
 			})
-
 		}
 	}
 	return segmentos
