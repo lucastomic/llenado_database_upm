@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
+	"sync"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/lucastomic/llenado_database_upm/models"
@@ -68,6 +69,7 @@ func insertar(db *sql.DB, insertSentence string, inserciones []models.Insercion)
 }
 
 func main() {
+
 	db, err := getDatabase()
 
 	if err != nil {
@@ -77,6 +79,8 @@ func main() {
 
 	// Terminar conexión al terminar función
 	defer db.Close()
+
+	var wg sync.WaitGroup
 
 	// Ahora vemos si tenemos conexión
 	err = db.Ping()
@@ -97,18 +101,66 @@ func main() {
 	// }
 
 	// Insertar municipios
-	var municipios []models.Insercion
-	municipiosSinProcesar := search.GetMunicipios()
-	for _, val := range municipiosSinProcesar {
-		municipios = append(municipios, val)
-	}
-	errores = insertar(db, "INSERT INTO municipio(nombre,provincia) VALUES (?,?)", municipios)
 
-	if len(errores) != 0 {
-		for _, e := range errores {
-			fmt.Println("Error al insertar municipio: ", e)
+	var municipiosSinProcesar []models.Municipio
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		var municipios []models.Insercion
+		municipiosSinProcesar = search.GetMunicipios()
+		for _, val := range municipiosSinProcesar {
+			municipios = append(municipios, val)
 		}
-	}
+		errores = insertar(db, "INSERT INTO municipio(nombre,provincia) VALUES (?,?)", municipios)
+
+		if len(errores) != 0 {
+			for _, e := range errores {
+				fmt.Println("Error al insertar municipio: ", e)
+			}
+		}
+	}()
+
+	// Insertar Cartero
+	var carterosSinProcesar []models.Cartero
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		var carteros []models.Insercion
+		carterosSinProcesar = search.GetCarteros()
+		for _, val := range carterosSinProcesar {
+			carteros = append(carteros, val)
+		}
+		errores = insertar(db, "INSERT INTO cartero(nombre,apellidos, DNI) VALUES (?,?,?)", carteros)
+		if len(errores) != 0 {
+			for _, e := range errores {
+				fmt.Println("Error al insertar cartero: ", e)
+			}
+		}
+	}()
+
+	// Insertar rutas predefinidas
+	var rutasPreSinProcesar []models.RutaPredefinida
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		var rutas []models.Insercion
+		rutasPreSinProcesar = search.GetRutasPre()
+		for _, val := range rutasPreSinProcesar {
+			rutas = append(rutas, val)
+		}
+		errores = insertar(db, "INSERT INTO rutaPredefinida(ID) VALUES (?)", rutas)
+		if len(errores) != 0 {
+			for _, e := range errores {
+				fmt.Println("Error al insertar ruta: ", e)
+			}
+		}
+
+	}()
+
+	wg.Wait()
 
 	// Insertar calle
 	var calles []models.Insercion
@@ -123,19 +175,6 @@ func main() {
 		}
 	}
 
-	// Insertar Cartero
-	var carteros []models.Insercion
-	carterosSinProcesar := search.GetCarteros()
-	for _, val := range carterosSinProcesar {
-		carteros = append(carteros, val)
-	}
-	errores = insertar(db, "INSERT INTO cartero(nombre,apellidos, DNI) VALUES (?,?,?)", carteros)
-	if len(errores) != 0 {
-		for _, e := range errores {
-			fmt.Println("Error al insertar cartero: ", e)
-		}
-	}
-
 	// Insertar direcciones
 
 	var direcciones []models.Insercion
@@ -147,19 +186,6 @@ func main() {
 	if len(errores) != 0 {
 		for _, e := range errores {
 			fmt.Println("Error al insertar dirección: ", e)
-		}
-	}
-
-	// Insertar rutas predefinidas
-	var rutas []models.Insercion
-	rutasPreSinProcesar := search.GetRutasPre()
-	for _, val := range rutasPreSinProcesar {
-		rutas = append(rutas, val)
-	}
-	errores = insertar(db, "INSERT INTO rutaPredefinida(ID) VALUES (?)", rutas)
-	if len(errores) != 0 {
-		for _, e := range errores {
-			fmt.Println("Error al insertar ruta: ", e)
 		}
 	}
 
@@ -313,12 +339,17 @@ func main() {
 	for _, val := range search.GetTrabajaEn(carterosSinProcesar, oficinasSP) {
 		trabajaEn = append(trabajaEn, val)
 	}
-	errores = insertar(db, "INSERT INTO trabajaEn(DNICartero,codigoOficina,horario,fechaInicio,turno) VALUES (?,?,?,?,?)", trabajaEn)
-	if len(errores) != 0 {
-		for _, e := range errores {
-			fmt.Println("Error al insertar trabajaEn: ", e)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		errores = insertar(db, "INSERT INTO trabajaEn(DNICartero,codigoOficina,horario,fechaInicio,turno) VALUES (?,?,?,?,?)", trabajaEn)
+		if len(errores) != 0 {
+			for _, e := range errores {
+				fmt.Println("Error al insertar trabajaEn: ", e)
+			}
 		}
-	}
+	}()
 
 	// Insertar repartos
 	var repartos []models.Insercion
@@ -334,38 +365,58 @@ func main() {
 	}
 
 	// Insertar cartasCer
-	var cartasCer []models.Insercion
-	for _, val := range search.GetCartasCertificadas(repartosSP, usuariosSinProcesar) {
-		cartasCer = append(cartasCer, val)
-	}
-	errores = insertar(db, "INSERT INTO cartaCertificada(Identificador,fecha,IDReparto,urgencia,IDEmisor,IDReceptor) VALUES (?,?,?,?,?,?)", cartasCer)
-	if len(errores) != 0 {
-		for _, e := range errores {
-			fmt.Println("Error al insertar carta certificada: ", e)
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+
+		var cartasCer []models.Insercion
+		for _, val := range search.GetCartasCertificadas(repartosSP, usuariosSinProcesar) {
+			cartasCer = append(cartasCer, val)
 		}
-	}
+		errores = insertar(db, "INSERT INTO cartaCertificada(Identificador,fecha,IDReparto,urgencia,IDEmisor,IDReceptor) VALUES (?,?,?,?,?,?)", cartasCer)
+		if len(errores) != 0 {
+			for _, e := range errores {
+				fmt.Println("Error al insertar carta certificada: ", e)
+			}
+		}
+	}()
 
 	// Insertar cartas
-	var cartas []models.Insercion
-	for _, val := range search.GetCartas(repartosSP, usuariosSinProcesar) {
-		cartas = append(cartas, val)
-	}
-	errores = insertar(db, "INSERT INTO carta(Identificador,fecha,IDReparto,formato,IDEmisor,IDReceptor) VALUES (?,?,?,?,?,?)", cartas)
-	if len(errores) != 0 {
-		for _, e := range errores {
-			fmt.Println("Error al insertar  carta : ", e)
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+
+		var cartas []models.Insercion
+		for _, val := range search.GetCartas(repartosSP, usuariosSinProcesar) {
+			cartas = append(cartas, val)
 		}
-	}
+		errores = insertar(db, "INSERT INTO carta(Identificador,fecha,IDReparto,formato,IDEmisor,IDReceptor) VALUES (?,?,?,?,?,?)", cartas)
+		if len(errores) != 0 {
+			for _, e := range errores {
+				fmt.Println("Error al insertar  carta : ", e)
+			}
+		}
+	}()
 
 	// Insertar paquete
-	var paquete []models.Insercion
-	for _, val := range search.GetPaquetes(repartosSP, usuariosSinProcesar) {
-		paquete = append(paquete, val)
-	}
-	errores = insertar(db, "INSERT INTO paquete(Identificador,fecha,IDReparto,comentario, peso, dimensiones,IDEmisor,IDReceptor) VALUES (?,?,?,?,?,?,?,?)", paquete)
-	if len(errores) != 0 {
-		for _, e := range errores {
-			fmt.Println("Error al insertar  carta : ", e)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		var paquete []models.Insercion
+		for _, val := range search.GetPaquetes(repartosSP, usuariosSinProcesar) {
+			paquete = append(paquete, val)
 		}
-	}
+		errores = insertar(db, "INSERT INTO paquete(Identificador,fecha,IDReparto,comentario, peso, dimensiones,IDEmisor,IDReceptor) VALUES (?,?,?,?,?,?,?,?)", paquete)
+		if len(errores) != 0 {
+			for _, e := range errores {
+				fmt.Println("Error al insertar  carta : ", e)
+			}
+		}
+	}()
+
+	wg.Wait()
 }

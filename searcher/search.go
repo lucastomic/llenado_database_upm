@@ -144,7 +144,7 @@ func GetSegmentos(calles []models.Calle, rutas []models.RutaPredefinida) []model
 	var segmentos []models.Segmento
 	for _, calle := range calles {
 		inicio := 0
-		final := rand.Intn(40)
+		final := rand.Intn(40-8) + 8
 		segmentos = append(segmentos, models.Segmento{
 			Inicio:    inicio,
 			Final:     final,
