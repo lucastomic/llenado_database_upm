@@ -60,7 +60,6 @@ func insertar(db *sql.DB, insertSentence string, inserciones []models.Insercion)
 
 		_, err = sentenciaPreparada.Exec(insercion.GetProps()...)
 		if err != nil {
-			// fmt.Println(insercion.GetProps()...)
 			errores = append(errores, err)
 		}
 		defer sentenciaPreparada.Close()
@@ -214,9 +213,35 @@ func main() {
 		}
 	}
 
+	// Insertar centro de clasificación
+	var centros []models.Insercion
+	centrosSinProcesar := search.GetCentrosDeClasificacion(municipiosSinProcesar)
+	for _, val := range centrosSinProcesar {
+		centros = append(centros, val)
+	}
+	errores = insertar(db, "INSERT INTO centroDeClasificacion(codigo,nombreMunicipio,nombre,nEnviosMax) VALUES (?,?,?,?)", centros)
+	if len(errores) != 0 {
+		for _, e := range errores {
+			fmt.Println("Error al insertar centro de clasificaicón: ", e)
+		}
+	}
+
+	// Insertar oficinas
+	var oficinas []models.Insercion
+	oficinasSP := search.GetOficinas(direccionesSinProcesar, centrosSinProcesar)
+	for _, val := range oficinasSP {
+		oficinas = append(oficinas, val)
+	}
+	errores = insertar(db, "INSERT INTO oficina(codigo,codigoCentroClasificacion,numero,letra,piso,portal,nombreCalle,nombreMunicipio) VALUES (?,?,?,?,?,?,?,?)", oficinas)
+	if len(errores) != 0 {
+		for _, e := range errores {
+			fmt.Println("Error al insertar oficina: ", e)
+		}
+	}
+
 	// Inserta areas de envio
 	var areasDeEnvio []models.Insercion
-	areasSinProcesar := search.GetAreasDeEnvio()
+	areasSinProcesar := search.GetAreasDeEnvio(oficinasSP)
 	for _, val := range areasSinProcesar {
 		areasDeEnvio = append(areasDeEnvio, val)
 	}
@@ -226,19 +251,6 @@ func main() {
 			fmt.Println("Error al insertar Area de envio: ", e)
 		}
 	}
-
-	// Insertar segmentos
-	var segmentos []models.Insercion
-	for _, val := range search.GetSegmentos(callesSinProcesar, rutasPreSinProcesar, areasSinProcesar) {
-		segmentos = append(segmentos, val)
-	}
-	errores = insertar(db, "INSERT INTO segmento(nInicio, nFinal, nombreCalle, nombreMunicipio,IDAreaDeEnvio) VALUES (?,?,?,?,?)", segmentos)
-	if len(errores) != 0 {
-		for _, e := range errores {
-			fmt.Println("Error al insertar segmento: ", e)
-		}
-	}
-
 	for _, area := range areasSinProcesar {
 		if rand.Intn(2) == 1 {
 			areaId := strings.Split(area.ID, "-")
@@ -271,6 +283,19 @@ func main() {
 		}
 	}
 
+	// Insertar segmentos
+	var segmentos []models.Insercion
+	segmentosSP := search.GetSegmentos(callesSinProcesar, rutasPreSinProcesar, areasSinProcesar)
+	for _, val := range segmentosSP {
+		segmentos = append(segmentos, val)
+	}
+	errores = insertar(db, "INSERT INTO segmento(nInicio, nFinal, nombreCalle, nombreMunicipio,IDAreaDeEnvio) VALUES (?,?,?,?,?)", segmentos)
+	if len(errores) != 0 {
+		for _, e := range errores {
+			fmt.Println("Error al insertar segmento: ", e)
+		}
+	}
+
 	// Insertar asosiasiones
 	var asosiasiones []models.Insercion
 	for _, val := range search.GetAsosianA(carterosSinProcesar, areasSinProcesar) {
@@ -295,32 +320,6 @@ func main() {
 		}
 	}
 
-	// Insertar centro de clasificación
-	var centros []models.Insercion
-	centrosSinProcesar := search.GetCentrosDeClasificacion(municipiosSinProcesar)
-	for _, val := range centrosSinProcesar {
-		centros = append(centros, val)
-	}
-	errores = insertar(db, "INSERT INTO centroDeClasificacion(codigo,nombreMunicipio,nombre,nEnviosMax) VALUES (?,?,?,?)", centros)
-	if len(errores) != 0 {
-		for _, e := range errores {
-			fmt.Println("Error al insertar centro de clasificaicón: ", e)
-		}
-	}
-
-	// Insertar oficinas
-	var oficinas []models.Insercion
-	oficinasSP := search.GetOficinas(direccionesSinProcesar, centrosSinProcesar)
-	for _, val := range oficinasSP {
-		oficinas = append(oficinas, val)
-	}
-	errores = insertar(db, "INSERT INTO oficina(codigo,codigoCentroClasificacion,numero,letra,piso,portal,nombreCalle,nombreMunicipio) VALUES (?,?,?,?,?,?,?,?)", oficinas)
-	if len(errores) != 0 {
-		for _, e := range errores {
-			fmt.Println("Error al insertar oficina: ", e)
-		}
-	}
-
 	// Insertar coches
 	var coches []models.Insercion
 	cochesSP := search.GetCoches(oficinasSP)
@@ -335,12 +334,12 @@ func main() {
 	}
 
 	// Insertar trabajaEn
-	var trabajaEn []models.Insercion
-	for _, val := range search.GetTrabajaEn(carterosSinProcesar, oficinasSP) {
-		trabajaEn = append(trabajaEn, val)
-	}
 	wg.Add(1)
 	go func() {
+		var trabajaEn []models.Insercion
+		for _, val := range search.GetTrabajaEn(carterosSinProcesar, oficinasSP) {
+			trabajaEn = append(trabajaEn, val)
+		}
 		defer wg.Done()
 
 		errores = insertar(db, "INSERT INTO trabajaEn(DNICartero,codigoOficina,horario,fechaInicio,turno) VALUES (?,?,?,?,?)", trabajaEn)
@@ -374,7 +373,7 @@ func main() {
 		for _, val := range search.GetCartasCertificadas(repartosSP, usuariosSinProcesar) {
 			cartasCer = append(cartasCer, val)
 		}
-		errores = insertar(db, "INSERT INTO cartaCertificada(Identificador,fecha,IDReparto,urgencia,IDEmisor,IDReceptor) VALUES (?,?,?,?,?,?)", cartasCer)
+		errores = insertar(db, "INSERT INTO cartaCertificada(identificador,fecha,IDReparto,urgencia,IDEmisor,IDReceptor) VALUES (?,?,?,?,?,?)", cartasCer)
 		if len(errores) != 0 {
 			for _, e := range errores {
 				fmt.Println("Error al insertar carta certificada: ", e)
@@ -392,7 +391,7 @@ func main() {
 		for _, val := range search.GetCartas(repartosSP, usuariosSinProcesar) {
 			cartas = append(cartas, val)
 		}
-		errores = insertar(db, "INSERT INTO carta(Identificador,fecha,IDReparto,formato,IDEmisor,IDReceptor) VALUES (?,?,?,?,?,?)", cartas)
+		errores = insertar(db, "INSERT INTO carta(identificador,fecha,IDReparto,formato,IDEmisor,IDReceptor) VALUES (?,?,?,?,?,?)", cartas)
 		if len(errores) != 0 {
 			for _, e := range errores {
 				fmt.Println("Error al insertar  carta : ", e)
@@ -401,7 +400,6 @@ func main() {
 	}()
 
 	// Insertar paquete
-
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -410,7 +408,24 @@ func main() {
 		for _, val := range search.GetPaquetes(repartosSP, usuariosSinProcesar) {
 			paquete = append(paquete, val)
 		}
-		errores = insertar(db, "INSERT INTO paquete(Identificador,fecha,IDReparto,comentario, peso, dimensiones,IDEmisor,IDReceptor) VALUES (?,?,?,?,?,?,?,?)", paquete)
+		errores = insertar(db, "INSERT INTO paquete(identificador,fecha,IDReparto,comentario, peso, dimensiones,IDEmisor,IDReceptor) VALUES (?,?,?,?,?,?,?,?)", paquete)
+		if len(errores) != 0 {
+			for _, e := range errores {
+				fmt.Println("Error al insertar  carta : ", e)
+			}
+		}
+	}()
+
+	// Insertar Cuenta con
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		var cuentaCon []models.Insercion
+		for _, val := range search.GetCuentaCon(segmentosSP, rutasPreSinProcesar) {
+			cuentaCon = append(cuentaCon, val)
+		}
+		errores = insertar(db, "INSERT INTO cuentaCon(IDRuta,nInicio,nFinal,nombreCalle, nombreMunicipio, orden) VALUES (?,?,?,?,?,?)", cuentaCon)
 		if len(errores) != 0 {
 			for _, e := range errores {
 				fmt.Println("Error al insertar  carta : ", e)

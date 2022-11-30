@@ -102,7 +102,7 @@ type AreaDeEnvio struct {
 }
 
 func (a AreaDeEnvio) GetProps() []any {
-	return []any{a.ID}
+	return []any{a.ID, a.Oficina}
 }
 
 type AsosianA struct {
@@ -219,4 +219,14 @@ type Paquete struct {
 
 func (c Paquete) GetProps() []any {
 	return []any{c.Identificador, c.Fecha, c.IDReparto, c.Comentario, c.Peso, c.Dimensiones, c.IDEmisor, c.IDReceptor}
+}
+
+type CuentaCon struct {
+	Ruta     int
+	Segmento Segmento
+	Orden    int
+}
+
+func (c CuentaCon) GetProps() []any {
+	return []any{c.Ruta, c.Segmento.Inicio, c.Segmento.Final, c.Segmento.Calle, c.Segmento.Municipio, c.Orden}
 }

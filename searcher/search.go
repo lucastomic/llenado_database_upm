@@ -265,7 +265,7 @@ func getProv() []string {
 	}
 }
 
-func GetAreasDeEnvio() []models.AreaDeEnvio {
+func GetAreasDeEnvio(oficinas []models.Oficina) []models.AreaDeEnvio {
 	var areas []models.AreaDeEnvio
 	provincias := getProv()
 
@@ -278,7 +278,8 @@ func GetAreasDeEnvio() []models.AreaDeEnvio {
 				numero = "0" + strconv.Itoa(i)
 			}
 			areas = append(areas, models.AreaDeEnvio{
-				ID: "AR-" + prov + "-" + numero,
+				ID:      "AR-" + prov + "-" + numero,
+				Oficina: oficinas[rand.Intn(len(oficinas))].Codigo,
 			})
 		}
 	}
@@ -529,4 +530,18 @@ func GetPaquetes(repartos []models.Reparto, usuarios []models.Usuario) []models.
 		})
 	}
 	return paquetes
+}
+
+func GetCuentaCon(segmentos []models.Segmento, rutas []models.RutaPredefinida) []models.CuentaCon {
+	var cuentaCon []models.CuentaCon
+	for _, ruta := range rutas {
+		for i := 0; i < rand.Intn(50)+8; i++ {
+			cuentaCon = append(cuentaCon, models.CuentaCon{
+				Segmento: segmentos[rand.Intn(len(segmentos))],
+				Orden:    i,
+				Ruta:     ruta.ID,
+			})
+		}
+	}
+	return cuentaCon
 }
