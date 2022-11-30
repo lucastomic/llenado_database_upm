@@ -57,16 +57,16 @@ func (r RutaPredefinida) GetProps() []any {
 }
 
 type Segmento struct {
-	Inicio    int
-	Final     int
-	Calle     string
-	Municipio string
-	Ruta      int
-	Orden     int
+	Inicio        int
+	Final         int
+	Calle         string
+	Municipio     string
+	Ruta          int
+	IDAreaDeEnvio string
 }
 
 func (s Segmento) GetProps() []any {
-	return []any{s.Inicio, s.Final, s.Calle, s.Municipio, s.Ruta, s.Orden}
+	return []any{s.Inicio, s.Final, s.Calle, s.Municipio, s.IDAreaDeEnvio}
 }
 
 type Usuario struct {
@@ -97,6 +97,7 @@ func (a AutorizaA) GetProps() []any {
 
 type AreaDeEnvio struct {
 	ID      string
+	Oficina string
 	IDPadre string
 }
 

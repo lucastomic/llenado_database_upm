@@ -102,7 +102,7 @@ CREATE TABLE areaDeEnvio (
   PRIMARY KEY (ID),
   CONSTRAINT
 	FOREIGN KEY(IDPadre) REFERENCES areaDeEnvio(ID)
-		ON UPDATE CASCADE
+	ON UPDATE CASCADE
 
 );
 
@@ -133,9 +133,9 @@ CREATE TABLE recogida (
   CONSTRAINT
 	FOREIGN KEY (DNICartero) REFERENCES cartero (DNI)
 		ON UPDATE CASCADE,
-    	FOREIGN KEY (numero, letra, piso, portal, nombreCalle, nombreMunicipio) REFERENCES direccion (numero, letra, piso, portal, nombreCalle, nombreMunicipio)
+    FOREIGN KEY (numero, letra, piso, portal, nombreCalle, nombreMunicipio) REFERENCES direccion (numero, letra, piso, portal, nombreCalle, nombreMunicipio)
 		ON UPDATE CASCADE
-      ON DELETE SET NULL
+    ON DELETE SET NULL
 );
 
 CREATE TABLE centroDeClasificacion (
@@ -147,7 +147,7 @@ CREATE TABLE centroDeClasificacion (
   CONSTRAINT 
 	FOREIGN KEY (nombreMunicipio) REFERENCES municipio (nombre)
 		ON UPDATE CASCADE
-        ON DELETE SET NULL
+    ON DELETE SET NULL
 );
 
 CREATE TABLE oficina (
@@ -268,4 +268,6 @@ CREATE TABLE paquete (
 	FOREIGN KEY (IDReceptor) REFERENCES usuario(ID)
 		ON UPDATE CASCADE
 );
+
+15:27:41	CREATE TABLE reparto (   IDRutaPredefinida VARCHAR(250) NOT NULL,   ID INT,   matriculaCoche VARCHAR(7) NOT NULL,   codigoOficina VARCHAR(250) NOT NULL,   DNICartero VARCHAR(9) NOT NULL,   PRIMARY KEY (ID),   CONSTRAINT   FOREIGN KEY (IDRutaPredefinida) REFERENCES rutaPredefinida (ID)   ON UPDATE CASCADE,     FOREIGN KEY (matriculaCoche) REFERENCES coche (matricula)   ON UPDATE CASCADE,  FOREIGN KEY (codigoOficina) REFERENCES oficina (codigo)   ON UPDATE CASCADE,      FOREIGN KEY (DNICartero) REFERENCES cartero (DNI)   ON UPDATE CASCADE )	Error Code: 3780. Referencing column 'IDRutaPredefinida' and referenced column 'ID' in foreign key constraint 'reparto_ibfk_1' are incompatible.	0.0020 sec
 

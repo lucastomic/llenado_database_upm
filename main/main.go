@@ -189,18 +189,6 @@ func main() {
 		}
 	}
 
-	// Insertar segmentos
-	var segmentos []models.Insercion
-	for _, val := range search.GetSegmentos(callesSinProcesar, rutasPreSinProcesar) {
-		segmentos = append(segmentos, val)
-	}
-	errores = insertar(db, "INSERT INTO segmento(nInicio, nFinal, nombreCalle, nombreMunicipio,IDRutaPredefinida, orden) VALUES (?,?,?,?,?,?)", segmentos)
-	if len(errores) != 0 {
-		for _, e := range errores {
-			fmt.Println("Error al insertar segmento: ", e)
-		}
-	}
-
 	// Insertar usuarios
 	var usuarios []models.Insercion
 	usuariosSinProcesar := search.GetUsuarios(direccionesSinProcesar)
@@ -232,10 +220,22 @@ func main() {
 	for _, val := range areasSinProcesar {
 		areasDeEnvio = append(areasDeEnvio, val)
 	}
-	errores = insertar(db, "INSERT INTO areaDeEnvio(ID) VALUES (?)", areasDeEnvio)
+	errores = insertar(db, "INSERT INTO areaDeEnvio(ID, codigoOficina) VALUES (?,?)", areasDeEnvio)
 	if len(errores) != 0 {
 		for _, e := range errores {
 			fmt.Println("Error al insertar Area de envio: ", e)
+		}
+	}
+
+	// Insertar segmentos
+	var segmentos []models.Insercion
+	for _, val := range search.GetSegmentos(callesSinProcesar, rutasPreSinProcesar, areasSinProcesar) {
+		segmentos = append(segmentos, val)
+	}
+	errores = insertar(db, "INSERT INTO segmento(nInicio, nFinal, nombreCalle, nombreMunicipio,IDAreaDeEnvio) VALUES (?,?,?,?,?)", segmentos)
+	if len(errores) != 0 {
+		for _, e := range errores {
+			fmt.Println("Error al insertar segmento: ", e)
 		}
 	}
 

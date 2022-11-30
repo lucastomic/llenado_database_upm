@@ -140,29 +140,29 @@ func GetRutasPre() []models.RutaPredefinida {
 	return rutas
 }
 
-func GetSegmentos(calles []models.Calle, rutas []models.RutaPredefinida) []models.Segmento {
+func GetSegmentos(calles []models.Calle, rutas []models.RutaPredefinida, areaDeEnvio []models.AreaDeEnvio) []models.Segmento {
 	var segmentos []models.Segmento
 	for _, calle := range calles {
 		inicio := 0
 		final := rand.Intn(40-8) + 8
 		segmentos = append(segmentos, models.Segmento{
-			Inicio:    inicio,
-			Final:     final,
-			Calle:     calle.Nombre,
-			Municipio: calle.Municipio,
-			Ruta:      rutas[rand.Intn(len(rutas))].ID,
-			Orden:     0,
+			Inicio:        inicio,
+			Final:         final,
+			Calle:         calle.Nombre,
+			Municipio:     calle.Municipio,
+			Ruta:          rutas[rand.Intn(len(rutas))].ID,
+			IDAreaDeEnvio: areaDeEnvio[rand.Intn(len(areaDeEnvio))].ID,
 		})
 		for i := 1; i < rand.Intn(10); i++ {
 			inicio = final + 1
 			final = inicio + rand.Intn(40)
 			segmentos = append(segmentos, models.Segmento{
-				Inicio:    inicio,
-				Final:     final,
-				Calle:     calle.Nombre,
-				Municipio: calle.Municipio,
-				Ruta:      rutas[rand.Intn(len(rutas))].ID,
-				Orden:     i,
+				Inicio:        inicio,
+				Final:         final,
+				Calle:         calle.Nombre,
+				Municipio:     calle.Municipio,
+				Ruta:          rutas[rand.Intn(len(rutas))].ID,
+				IDAreaDeEnvio: areaDeEnvio[rand.Intn(len(areaDeEnvio))].ID,
 			})
 		}
 	}
